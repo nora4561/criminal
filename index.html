@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>法庭先鋒：正義的軌跡</title>
+    <!-- 引入 Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 引入 React & ReactDOM UMD 生產環境版本 -->
+    <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+    <!-- 引入 Babel 瀏覽器端編譯器 -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            background-color: #020617; /* slate-950 */
+        }
+        /* 滾動條樣式優化 */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col font-sans">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState } = React;
+
+        // --- 精美 SVG 圖示組件（保障單檔運行且不破圖） ---
+        const GavelIcon = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="m14 13-5-5 1.5-1.5a3 3 0 1 1 4.2 4.2L13 12.2" />
+                <path d="m3 21 6-6" />
+                <path d="M11 13 4.5 6.5a1.5 1.5 0 0 1 0-2.1L6 2.9a1.5 1.5 0 0 1 2.1 0L14.6 9" />
+                <path d="M16 16a2 2 0 1 0 4 0c0-1-1-2-2-2s-2 1-2 2Z" />
+                <path d="M18 14H8" />
+            </svg>
+        );
+
+        const ScaleIcon = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="m16 16 3-8 3 8c-.87.65-2.24 1-3 1s-2.13-.35-3-1Z" />
+                <path d="m2 16 3-8 3 8c-.87.65-2.24 1-3 1s-2.13-.35-3-1Z" />
+                <path d="M7 21h10" />
+                <path d="M12 3v18" />
+                <path d="M3 7h18" />
+            </svg>
+        );
+
+        const ShieldIcon = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M20 13c0 5-3.5 7.5-7.66 9.7a1 1 0 0 1-.68 0C7.5 20.5 4 18 4 13V6a1 1 0 0 1 .76-.97l8-2a1 1 0 0 1 .48 0l8 2a1 1 0 0 1 .76.97v7z" />
+            </svg>
+        );
+
+        const AwardIcon = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="8" r="6" />
+                <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
+            </svg>
+        );
+
+        const AlertCircleIcon = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="12" y1="8" x2="12" y2="12" />
+                <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+        );
+
+        const ArrowRightIcon = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <line x1="5" y1="12" x2="19" y2="12" />
+                <polyline points="12 5 19 12 12 19" />
+            </svg>
+        );
+
+        const RotateCcwIcon = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8" />
+                <polyline points="3 3 3 8 8 8" />
+            </svg>
+        );
+
+        const CheckCircleIcon = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
+                <polyline points="22 4 12 14.01 9 11.01" />
+            </svg>
+        );
+
+        const XCircleIcon = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="10" />
+                <line x1="15" y1="9" x2="9" y2="15" />
+                <line x1="9" y1="9" x2="15" y2="15" />
+            </svg>
+        );
+
+        const BookOpenIcon = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z" />
+                <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+            </svg>
+        );
+
+        const UsersIcon = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
+                <circle cx="9" cy="7" r="4" />
+                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
+                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+            </svg>
+        );
+
+        const HelpCircleIcon = ({ size = 20, className = "" }) => (
+            <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+                <circle cx="12" cy="12" r="10" />
+                <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                <line x1="12" y1="17" x2="12.01" y2="17" />
+            </svg>
+        );
+
+        // --- 核心法律卡牌數據 ---
+        const LEGAL_CARDS = [
+          {
+            id: 'ultima_ratio',
+            title: '刑法最後手段',
+            category: '原則卡',
+            icon: '🛡️',
+            desc: '當有其他手段（如民事賠償、行政處分）可解決時，刑法應作為維護社會秩序的最後防線。',
+            flavor: '國家不應動輒動用強大的刑罰權來干預人民的微小侵害。'
+          },
+          {
+            id: 'legality',
+            title: '罪刑法定主義',
+            category: '原則卡',
+            icon: '📜',
+            desc: '非法律明文規定者，不構成犯罪，亦不得加以處罰。禁止類推適用與溯及既往。',
+            flavor: '保護人民免於國家恣意擴張刑罰的侵害。'
+          },
+          {
+            id: 'constitution',
+            title: '構成要件該當',
+            category: '三階論卡',
+            icon: '🔍',
+            desc: '檢驗行為是否符合刑法法條所明定的「客觀事實」（如損害行為）與「主觀心態」（故意、過失）。',
+            flavor: '三階論第一步：這行為在法律法條上有寫到嗎？'
+          },
+          {
+            id: 'justification',
+            title: '阻卻違法事由',
+            category: '三階論卡',
+            icon: '⚖️',
+            desc: '行為雖符合法條要件，但若有「正當防衛」、「緊急避難」或「依法令之行為」，則排除違法。',
+            flavor: '三階論第二步：這看似犯罪的行為，是否有合理的法律正當事由？'
+          },
+          {
+            id: 'responsibility',
+            title: '責任能力',
+            category: '三階論卡',
+            icon: '🧠',
+            desc: '檢驗行為人犯案時的年齡（如是否未成年）與精神狀態，確認其是否具備完全的刑事責任能力。',
+            flavor: '三階論第三步：行為人有足夠的心智和責任能接受處罰嗎？'
+          },
+          {
+            id: 'free_evaluation',
+            title: '自由心證',
+            category: '程序與權利卡',
+            icon: '🧑‍⚖️',
+            desc: '法官憑證據與「經驗法則」及「論理法則」自由判斷證據力，不可受到媒體輿論或公眾情緒勒索。',
+            flavor: '司法獨立的基石：審判的唯一準繩是法律與事實，而非民粹。'
+          },
+          {
+            id: 'victim_protection',
+            title: '被害人保護',
+            category: '程序與權利卡',
+            icon: '🤝',
+            desc: '運用單面鏡、變聲器、隱匿身分等物理與法律機制保護證人與被害人，保障其人身安全與訴訟權益。',
+            flavor: '正義不只要制裁犯罪，更要撐起被害人的保護傘。'
+          },
+          {
+            id: 'juvenile_act',
+            title: '少年事件處理法',
+            category: '特殊程序卡',
+            icon: '🎒',
+            desc: '針對12歲以上未滿18歲之少年，採取「保護與輔導優先」原則，重在矯治與環境調整而非純粹刑罰。',
+            flavor: '拉住迷途的少年：用輔導與教育，代替冰冷的鐵窗。'
+          }
+        ];
+
+        // --- 關卡數據定義 ---
+        const LEVELS = [
+          {
+            id: 1,
+            title: '第一關：立案偵查',
+            scenarioTitle: '是「竊盜罪」還是同學間的糾紛？',
+            description: '阿明發現自己精心準備的雙層牛肉起司便當被隔壁同學偷吃了！阿明氣得在教室大聲怒吼：「我要報警把小偷抓去關！讓他留下一輩子的污點跟案底！」作為實習司法團隊，面對憤怒的當事人，你們該打出哪張卡牌來應對此情境？',
+            keyFocus: '探討國家動用刑罰的目的與謙抑思想（刑罰最後手段性）。',
+            correctCardId: 'ultima_ratio',
+            hints: '提示：想一想「偷吃便當」雖然損害財產，但真的有嚴重到需要動用監獄、警察等國家龐大的刑事司法資源嗎？是否有更合適、侵害更小的救濟管道？'
+          },
+          {
+            id: 2,
+            title: '第二關：犯罪成立？',
+            scenarioTitle: '深夜的防衛與反擊',
+            description: '某甲深夜回家，驚見小偷正在客廳搬電視。某甲情急之下，隨手拿起玄關的防身木棒一陣亂打，導致小偷手臂骨折。小偷被制服後，憤而反告某甲傷害罪！實習司法團隊必須在法庭上依序進行「三階論」的嚴格檢驗，判定某甲是否成立犯罪！',
+            keyFocus: '理解犯罪成立的三階論（構成要件該當性、違法性、有責性）與正當防衛。',
+            steps: [
+              {
+                stepNum: 1,
+                instruction: '【步驟一】法官詢問：「某甲將小偷打到骨折，這在客觀上確實造成傷害結果，主觀上有傷害故意。我們要先用哪一個概念來檢驗此行為在刑法條文上的該當？」',
+                correctCardId: 'constitution',
+                hint: '提示：犯罪成立的第一步，先看此行為是否符合法條所規定的罪名要件。'
+              },
+              {
+                stepNum: 2,
+                instruction: '【步驟二】法官點頭：「沒錯！傷害行為已符合條文。接下來，某甲主張『我是為了保護財產安全才反擊』，我們應該打出哪張卡來審查此防衛權利？」',
+                correctCardId: 'justification',
+                hint: '提示：尋找可以用來「阻卻」違法行為的正當事由。'
+              },
+              {
+                stepNum: 3,
+                instruction: '【特別考驗】打出阻卻違法後，法官要求你們判斷：「某甲為了保護電視（財產），卻把人打到『骨折』（生命身體）。這是否超過了合理防衛的限度？」',
+                isInteractiveChoice: true,
+                choices: [
+                  {
+                    text: '構成「正當防衛」，行為完全合理，完全無罪！',
+                    feedback: '【法官糾正】：不對喔。雖然是保護財產，但手段可能過激。財產權的價值低於生命身體健康權，必須衡量比例原則。實務上高機率判定為「防衛過當」！',
+                    scoreChange: -10,
+                    isCorrect: false
+                  },
+                  {
+                    text: '構成「防衛過當」，雖然仍具違法性，但可以依法減輕或免除其刑。',
+                    feedback: '【法官讚許】：完全正確！保護財產手段仍須符合比例原則，造成骨折已屬過當，但情有可原，應依刑法第23條但書減免其刑！',
+                    scoreChange: 15,
+                    isCorrect: true
+                  }
+                ]
+              },
+              {
+                stepNum: 4,
+                instruction: '【步驟三】法官微笑：「非常好。確認了防衛過當後，最後一步我們必須檢驗被告某甲作案時的精神狀態與年齡是否能承擔責任。請打出對應卡牌：」',
+                correctCardId: 'responsibility',
+                hint: '提示：三階論的最後一關，審查被告是否具有責任能力。'
+              }
+            ]
+          },
+          {
+            id: 3,
+            title: '第三關：法庭審理',
+            scenarioTitle: '輿論風暴與驚恐的證人',
+            description: '此案進入公審，媒體與網路輿論大肆報導，網路上數萬名鄉民群情激憤、肉搜某甲並痛罵小偷，高喊「法官不判小偷死刑就是恐龍法官！」。另一方面，當晚目擊一切的某甲妹妹，因為極度害怕遭到小偷同夥報復，在庭外痛哭、發抖，表示不願意進法庭作證。',
+            keyFocus: '理解法官獨立審判（自由心證與論理經驗法則）及證人被害人保護制度。請打出兩張卡牌來應對「證人害怕」與「媒體公審」這兩個危機！',
+            correctCardIds: ['victim_protection', 'free_evaluation']
+          },
+          {
+            id: 4,
+            title: '第四關：特殊身分',
+            scenarioTitle: '意外的出生證明',
+            description: '審理來到最後，實習團隊在核對小偷（被告乙）的戶籍與出生證明時，突然驚訝地發現：小偷乙在案發當天剛滿 15 歲又 6 個月！此時，法庭程序將強制變更，你們發現一般起訴並處以普通刑罰的卡牌全部被封鎖了！你們該如何處理位迷途少年的案件？',
+            keyFocus: '認識《少年事件處理法》與國家對少年的「保護優先」特殊保障。',
+            correctCardId: 'juvenile_act',
+            hints: '提示：國家對12歲以上未滿18歲的少年犯罪，有別於一般刑事處分，重視保護、輔導與教育。'
+          }
+        ];
+
+        function App() {
+          // --- 遊戲狀態管理 ---
+          const [gameState, setGameState] = useState('start'); // start, playing, level_summary, game_over, victory
+          const [credibility, setCredibility] = useState(100); // 司法公信力分數
+          const [currentLevelIdx, setCurrentLevelIdx] = useState(0);
+          const [levelStepIdx, setLevelStepIdx] = useState(0); // 針對第二關的細分步驟
+          
+          // 記錄第三關需要打出兩張卡牌
+          const [lvl3PlayedCards, setLvl3PlayedCards] = useState([]); 
+
+          const [activeCard, setActiveCard] = useState(null); // 當前選中的手牌，可看詳細資訊
+          const [feedbackModal, setFeedbackModal] = useState({ show: false, isSuccess: false, title: '', content: '' });
+          const [gameLog, setGameLog] = useState([
+            { type: 'system', text: '⚖️ 實習司法團隊已報到，請準備迎接第一宗案件。' }
+          ]);
+
+          const currentLevel = LEVELS[currentLevelIdx];
+
+          // 啟動遊戲
+          const handleStartGame = () => {
+            setGameState('playing');
+            setCredibility(100);
+            setCurrentLevelIdx(0);
+            setLevelStepIdx(0);
+            setLvl3PlayedCards([]);
+            setGameLog([{ type: 'system', text: '⚖️ 實習司法團隊已報到，準備進行第一關：立案偵查。' }]);
+          };
+
+          // 添加法庭日誌
+          const addLog = (type, text) => {
+            setGameLog(prev => [{ type, text }, ...prev]);
+          };
+
+          // 公信力變動
+          const changeCredibility = (amount) => {
+            setCredibility(prev => {
+              const next = Math.max(0, Math.min(100, prev + amount));
+              if (next <= 0) {
+                setGameState('game_over');
+                addLog('error', '❌ 司法公信力降為 0！實習團隊因重大失職與法律適用錯誤，被取消實習資格。');
+              }
+              return next;
+            });
+          };
+
+          // 處理卡牌點擊 (預覽)
+          const handleSelectCard = (card) => {
+            setActiveCard(card);
+          };
+
+          // 關卡進度推進
+          const nextLevel = () => {
+            if (currentLevelIdx < LEVELS.length - 1) {
+              setCurrentLevelIdx(prev => prev + 1);
+              setLevelStepIdx(0);
+              setLvl3PlayedCards([]);
+              setGameState('playing');
+              addLog('system', `⚖️ 進入${LEVELS[currentLevelIdx + 1].title}。`);
+            } else {
+              setGameState('victory');
+              addLog('success', '🏆 恭喜！實習司法團隊成功完成所有司法關卡，維護了憲法與正義！');
+            }
+          };
+
+          // 出牌邏輯
+          const handlePlayCard = (cardId) => {
+            if (gameState !== 'playing') return;
+
+            const card = LEGAL_CARDS.find(c => c.id === cardId);
+            
+            // --- 第一關判斷 ---
+            if (currentLevel.id === 1) {
+              if (cardId === currentLevel.correctCardId) {
+                setFeedbackModal({
+                  show: true,
+                  isSuccess: true,
+                  title: '⚖️ 判斷正確！打出【' + card.title + '】',
+                  content: '【法官評語】：完全正確！偷吃便當屬於財產微小侵害。雖然構成竊盜，但如果直接動用警察逮捕、起訴甚至判刑，不僅不符合比例原則，更浪費國家司法資源。此時應優先以學校校規輔導、民事損害賠償解決，這正是「刑法最後手段性（謙抑性）」的展現！'
+                });
+                changeCredibility(10);
+                addLog('success', `第一關成功：打出「${card.title}」，成功向阿明解釋了刑法最後手段性。`);
+                setGameState('level_summary');
+              } else {
+                setFeedbackModal({
+                  show: false,
+                  isSuccess: false,
+                  title: '❌ 法律適用錯誤',
+                  content: ''
+                });
+                // 自訂非正確卡牌的反饋
+                let customError = `你打出了【${card.title}】。但法官搖搖頭：「這無法解決阿明的極端要求。面對偷吃便當，難道我們真的要直接啟動刑事訴訟、檢驗三階論或甚至動用保護程序嗎？再想想看，什麼才是刑罰的基本謙抑態度？」`;
+                
+                setFeedbackModal({
+                  show: true,
+                  isSuccess: false,
+                  title: '❌ 出牌錯誤：' + card.title,
+                  content: customError
+                });
+                changeCredibility(-15);
+                addLog('error', `第一關出牌錯誤：嘗試在微小侵害事件使用「${card.title}」。`);
+              }
+            }
+
+            // --- 第二關判斷 (三階論多步驟) ---
+            else if (currentLevel.id === 2) {
+              const currentStep = currentLevel.steps[levelStepIdx];
+
+              if (currentStep.isInteractiveChoice) {
+                // 這一步需要做互動選擇，不應在此出卡
+                return;
+              }
+
+              if (cardId === currentStep.correctCardId) {
+                let successMsg = '';
+                if (cardId === 'constitution') {
+                  successMsg = '【法官點頭】：正確！打人骨折符合客觀傷害行為，主觀上也有故意，確實「構成要件該當」。第一關順利通過，那接下來怎麼檢驗被告主張的防衛權利？';
+                } else if (cardId === 'justification') {
+                  successMsg = '【法官微笑】：沒錯！正當防衛屬於法律上的「阻卻違法事由」。不過，這時候我們得面臨一個非常棘手的實務難題：某甲的防衛手段是不是真的完全合理？';
+                } else if (cardId === 'responsibility') {
+                  successMsg = '【法官讚許】：正確！最後一步檢驗「責任能力」。某甲是心智健全、有完全責任能力的成年人。經過三階論（該當性、違法性、有責性）的檢驗，我們認定某甲構成「防衛過當傷害罪」，但法官可依法減輕或免除其刑！這展現了司法嚴謹的思辨！';
+                }
+
+                setFeedbackModal({
+                  show: true,
+                  isSuccess: true,
+                  title: `🎯 步驟 ${levelStepIdx + 1} 通過：${card.title}`,
+                  content: successMsg
+                });
+                changeCredibility(5);
+                addLog('success', `第二關步驟 ${levelStepIdx + 1} 成功：打出「${card.title}」。`);
+
+                // 前進到下一步
+                if (levelStepIdx < currentLevel.steps.length - 1) {
+                  setLevelStepIdx(prev => prev + 1);
+                } else {
+                  setGameState('level_summary');
+                }
+              } else {
+                setFeedbackModal({
+                  show: true,
+                  isSuccess: false,
+                  title: `❌ 步驟 ${levelStepIdx + 1} 錯誤`,
+                  content: `【法官搖頭】：三階論有其邏輯先後順序，在檢驗「${currentStep.instruction.split('」')[0].split('「')[1] || '當前階段'}」時，打出【${card.title}】順序不對或概念不符！請重新審視案情與提示。`
+                });
+                changeCredibility(-15);
+                addLog('error', `第二關步驟 ${levelStepIdx + 1} 錯誤：錯誤打出「${card.title}」。`);
+              }
+            }
+
+            // --- 第三關判斷 (需要打出兩張卡) ---
+            else if (currentLevel.id === 3) {
+              if (currentLevel.correctCardIds.includes(cardId)) {
+                if (lvl3PlayedCards.includes(cardId)) {
+                  setFeedbackModal({
+                    show: true,
+                    isSuccess: false,
+                    title: '⚠️ 重複出牌',
+                    content: `【${card.title}】已經在法庭上啟動了，請嘗試解決另一個面臨的危機！`
+                  });
+                  return;
+                }
+
+                const newPlayed = [...lvl3PlayedCards, cardId];
+                setLvl3PlayedCards(newPlayed);
+                changeCredibility(10);
+                addLog('success', `第三關：成功啟動「${card.title}」。`);
+
+                let feedbackText = '';
+                if (cardId === 'victim_protection') {
+                  feedbackText = '【法官讚許】：完全正確！打出【被害人保護】！我們迅速開啟「單面鏡隔離偵訊室」與「變聲裝置」，讓被告與其同夥在庭上無法直接直視證人，確保證人的安全，讓他能安心陳述事實。這體現了程序上對弱勢與證人的保護！';
+                } else if (cardId === 'free_evaluation') {
+                  feedbackText = '【法官肯定】：強而有力！打出【自由心證】卡！法官當庭宣誓：法庭審判唯有依據合法調查的證據、經驗法則與論理法則，絕對不受媒體片面報導或網路鄉民的公審輿論干擾，捍衛了司法獨立與審判公正！';
+                }
+
+                if (newPlayed.length === 2) {
+                  setFeedbackModal({
+                    show: true,
+                    isSuccess: true,
+                    title: '✨ 第三關完全破解！',
+                    content: feedbackText + '\n\n【關卡總結】：你們同時保障了被害人（證人）的人身安全，又堅守了法官不受輿論左右的獨立判決原則。本案順利進入宣判階段！'
+                  });
+                  setGameState('level_summary');
+                } else {
+                  setFeedbackModal({
+                    show: true,
+                    isSuccess: true,
+                    title: `🎯 成功應對一項危機！`,
+                    content: feedbackText + '\n\n法庭上還有另一個棘手的危機尚未解決，請繼續努力！'
+                  });
+                }
+              } else {
+                setFeedbackModal({
+                  show: true,
+                  isSuccess: false,
+                  title: '❌ 無法解決危機',
+                  content: `你打出了【${card.title}】。但這無法舒緩「媒體公審與輿論綁架」或「證人因恐懼不敢出庭」這兩大急迫危機！請重新思索訴訟程序中對人和審判獨立的保障。`
+                });
+                changeCredibility(-10);
+                addLog('error', `第三關出牌無效：打出「${card.title}」未能解決當前法庭危機。`);
+              }
+            }
+
+            // --- 第四關判斷 ---
+            else if (currentLevel.id === 4) {
+              if (cardId === currentLevel.correctCardId) {
+                setFeedbackModal({
+                  show: true,
+                  isSuccess: true,
+                  title: '🎉 終局判決！正確打出【' + card.title + '】',
+                  content: '【法官熱烈掌聲】：非常優秀！面對 15 歲的少年乙，普通刑事訴訟程序不能再繼續適用。我們必須依據《少年事件處理法》，秉持「保護與輔導優先」之精神，將本案移送至少年法庭。由少年調查官介入調查其成長環境，重在導正偏差行為，而非直接施以刑事監禁處罰！這正彰顯了國家對非行少年的特殊福利與健全成長保障！'
+                });
+                changeCredibility(15);
+                addLog('success', '第四關成功：成功將少年案件移送少年法庭，貫徹保護優先原則。');
+                setGameState('level_summary');
+              } else {
+                setFeedbackModal({
+                  show: true,
+                  isSuccess: false,
+                  title: '❌ 違反少年保護原則！',
+                  content: `你打出了【${card.title}】。但是，面對一個剛滿15歲的迷途少年，如果你們堅持要用對付成年人的嚴酷刑事手段，或者不轉換法律軌道，不只會重創司法形象，更違反了《少年事件處理法》保護優先的根本原則！請找出專門對付非行少年的關鍵法典卡。`
+                });
+                changeCredibility(-15);
+                addLog('error', `第四關錯誤：嘗試對 15 歲少年適用一般程序或不當卡牌。`);
+              }
+            }
+          };
+
+          // 第二關特殊選擇題點擊
+          const handleLevel2Choice = (choice) => {
+            setFeedbackModal({
+              show: true,
+              isSuccess: choice.isCorrect,
+              title: choice.isCorrect ? '🎯 判斷精準！' : '⚠️ 觀念有偏差',
+              content: choice.feedback
+            });
+            changeCredibility(choice.scoreChange);
+            if (choice.isCorrect) {
+              addLog('success', '第二關互動抉擇：正確判定某甲屬於「防衛過當」。');
+              setLevelStepIdx(prev => prev + 1);
+            } else {
+              addLog('error', '第二關互動抉擇：誤判防衛權限，公信力下降。');
+            }
+          };
+
+          return (
+            <div className="flex-1 flex flex-col min-h-screen">
+              {/* 頂部導航 & 公信力顯示 */}
+              <header className="bg-slate-900 border-b border-slate-800 p-4 sticky top-0 z-40 shadow-md">
+                <div className="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className="bg-amber-600 p-2 rounded-lg text-white shadow-inner">
+                      <ScaleIcon size={24} />
+                    </div>
+                    <div>
+                      <h1 className="text-xl font-black tracking-wider text-amber-500">法庭先鋒：正義的軌跡</h1>
+                      <p className="text-xs text-slate-400">司法實習團隊模擬挑戰系統</p>
+                    </div>
+                  </div>
+
+                  {gameState === 'playing' && (
+                    <div className="flex items-center gap-4 bg-slate-950/80 px-4 py-2 rounded-full border border-slate-800 shadow-sm w-full sm:w-auto">
+                      <span className="text-xs font-bold text-slate-400 whitespace-nowrap">司法公信力</span>
+                      <div className="w-32 sm:w-48 bg-slate-800 h-3.5 rounded-full overflow-hidden relative">
+                        <div 
+                          className={`h-full transition-all duration-500 ${
+                            credibility > 70 ? 'bg-emerald-500' : credibility > 40 ? 'bg-amber-500' : 'bg-rose-500'
+                          }`}
+                          style={{ width: `${credibility}%` }}
+                        />
+                      </div>
+                      <span className={`font-mono font-bold text-sm ${
+                        credibility > 70 ? 'text-emerald-400' : credibility > 40 ? 'text-amber-400' : 'text-rose-400'
+                      }`}>{credibility} / 100</span>
+                    </div>
+                  )}
+                </div>
+              </header>
+
+              {/* 遊戲進度條 */}
+              {gameState === 'playing' && (
+                <div className="bg-slate-900/60 border-b border-slate-800/80 py-2.5 px-4 overflow-x-auto whitespace-nowrap">
+                  <div className="max-w-4xl mx-auto flex items-center justify-between text-xs gap-2">
+                    {LEVELS.map((lvl, idx) => (
+                      <React.Fragment key={lvl.id}>
+                        <div className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition-all ${
+                          idx === currentLevelIdx 
+                            ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30 font-bold scale-105' 
+                            : idx < currentLevelIdx
+                            ? 'text-emerald-400'
+                            : 'text-slate-500'
+                        }`}>
+                          {idx < currentLevelIdx ? <CheckCircleIcon size={14} /> : <span>{idx + 1}</span>}
+                          <span>{lvl.title}</span>
+                        </div>
+                        {idx < LEVELS.length - 1 && <span className="text-slate-700">➜</span>}
+                      </React.Fragment>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* 主體畫面 */}
+              <main className="flex-1 max-w-7xl w-full mx-auto p-4 flex flex-col lg:flex-row gap-6 overflow-hidden">
+                
+                {/* 開始畫面 */}
+                {gameState === 'start' && (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-12">
+                    <div className="bg-amber-600/10 p-6 rounded-full border border-amber-500/20 mb-6 shadow-xl animate-pulse text-amber-500">
+                      <GavelIcon size={64} />
+                    </div>
+                    <h2 className="text-3xl sm:text-4xl font-extrabold text-white mb-4">歡迎來到實習法庭！</h2>
+                    <p className="text-slate-400 mb-6 leading-relaxed">
+                      你們即將帶領一件案子經歷一場驚心動魄的司法追訴與處罰之旅。
+                      身為實習團隊，你們必須在每個關鍵路口做出合法的判斷。打出正確的法律原則卡來破解難題，若適用錯誤的法律原則，將會耗損社會對你們的「司法公信力」。
+                    </p>
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 mb-8 text-left text-sm space-y-2.5 max-w-md">
+                      <div className="font-bold text-amber-500 flex items-center gap-1"><BookOpenIcon size={16}/> 遊戲規則概要：</div>
+                      <p className="text-slate-300">1. 本遊戲共分為 4 個關鍵關卡。</p>
+                      <p className="text-slate-300">2. 依據台上的情境與考驗，從手牌中點擊合適的卡牌並「出牌」。</p>
+                      <p className="text-slate-300">3. 若司法公信力降為 0 則實習判定失敗，若能順利走完四關即完成正義的軌跡！</p>
+                    </div>
+                    <button 
+                      onClick={handleStartGame}
+                      className="bg-amber-600 hover:bg-amber-500 text-slate-950 font-black px-10 py-4 rounded-xl text-lg flex items-center gap-2 shadow-lg hover:shadow-amber-500/20 transition-all transform hover:-translate-y-0.5"
+                    >
+                      <UsersIcon size={20} /> 啟動實習研討
+                    </button>
+                  </div>
+                )}
+
+                {/* 遊戲遊玩中 */}
+                {gameState === 'playing' && (
+                  <div className="flex-1 flex flex-col lg:flex-row gap-6">
+                    
+                    {/* 左側：當前案情簡報 */}
+                    <div className="flex-1 bg-slate-900/50 border border-slate-800/80 rounded-2xl p-6 flex flex-col justify-between shadow-xl">
+                      <div>
+                        <div className="flex justify-between items-center mb-4">
+                          <span className="text-xs font-bold text-amber-500 bg-amber-500/10 border border-amber-500/20 px-3 py-1 rounded-full">
+                            {currentLevel.title}
+                          </span>
+                          <span className="text-xs text-slate-500">學習核心：{currentLevel.keyFocus}</span>
+                        </div>
+
+                        <h3 className="text-2xl font-bold text-white mb-3 flex items-center gap-2">
+                          <HelpCircleIcon className="text-amber-500 shrink-0" size={24} />
+                          {currentLevel.scenarioTitle}
+                        </h3>
+
+                        <p className="text-slate-300 text-base leading-relaxed bg-slate-950/40 p-4 rounded-xl border border-slate-800/50 mb-6 font-medium">
+                          {currentLevel.description}
+                        </p>
+
+                        {/* 關卡 2 的多步驟特殊 UI */}
+                        {currentLevel.id === 2 && (
+                          <div className="mb-6 space-y-4">
+                            <div className="flex items-center gap-2 text-sm text-slate-400 font-bold border-b border-slate-800 pb-2">
+                              <GavelIcon size={16} className="text-amber-500" />
+                              <span>刑事三階論審查程序中 (步驟 {levelStepIdx + 1} / 4)</span>
+                            </div>
+
+                            {/* 顯示步驟指示 */}
+                            <div className="p-4 bg-slate-950 rounded-xl border border-amber-500/20">
+                              <p className="text-amber-200 text-sm leading-relaxed font-bold">
+                                {currentLevel.steps[levelStepIdx].instruction}
+                              </p>
+                            </div>
+
+                            {/* 抉擇題特殊按鈕 */}
+                            {currentLevel.steps[levelStepIdx].isInteractiveChoice && (
+                              <div className="grid grid-cols-1 gap-3 pt-2">
+                                {currentLevel.steps[levelStepIdx].choices.map((choice, i) => (
+                                  <button
+                                    key={i}
+                                    onClick={() => handleLevel2Choice(choice)}
+                                    className="bg-slate-900 hover:bg-slate-800 text-left p-4 rounded-xl border border-slate-800 hover:border-amber-500/40 text-sm font-semibold transition-all group flex items-center justify-between"
+                                  >
+                                    <span>{choice.text}</span>
+                                    <ArrowRightIcon size={16} className="text-slate-600 group-hover:text-amber-500 transition-colors" />
+                                  </button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+
+                        {/* 關卡 3 的特殊提示 UI */}
+                        {currentLevel.id === 3 && (
+                          <div className="mb-6 space-y-3 bg-slate-950 p-4 rounded-xl border border-slate-800">
+                            <div className="text-sm font-bold text-slate-400">目前已應對措施：</div>
+                            <div className="flex gap-2">
+                              <span className={`text-xs px-2.5 py-1 rounded-md border ${
+                                lvl3PlayedCards.includes('victim_protection') 
+                                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                                  : 'bg-slate-900 border-slate-800 text-slate-600'
+                              }`}>
+                                🛡️ 被害人防護機制 {lvl3PlayedCards.includes('victim_protection') ? '已啟動' : '未處理'}
+                              </span>
+                              <span className={`text-xs px-2.5 py-1 rounded-md border ${
+                                lvl3PlayedCards.includes('free_evaluation') 
+                                  ? 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400' 
+                                  : 'bg-slate-900 border-slate-800 text-slate-600'
+                              }`}>
+                                ⚖️ 司法心證獨立審判 {lvl3PlayedCards.includes('free_evaluation') ? '已宣告' : '未處理'}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* 底部提示區 */}
+                      {!currentLevel.steps?.[levelStepIdx]?.isInteractiveChoice && (
+                        <div className="bg-slate-950/60 p-4 rounded-xl border border-slate-800 text-xs text-slate-400">
+                          <span className="font-bold text-amber-500 block mb-1">💡 實習研討提示：</span>
+                          {currentLevel.id === 2 ? currentLevel.steps[levelStepIdx].hint : currentLevel.hints || '從下方手牌中選擇一張最適當的法律卡牌打出，來解決面臨的訴訟與正義課題。'}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* 右側：出牌區 & 法庭紀錄 */}
+                    <div className="w-full lg:w-96 flex flex-col gap-6">
+                      
+                      {/* 卡牌詳細資訊面板 */}
+                      <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-5 shadow-xl flex-1 flex flex-col justify-between min-h-[220px]">
+                        <div>
+                          <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 border-b border-slate-800 pb-2">
+                            🔎 法律概念預覽
+                          </div>
+                          {activeCard ? (
+                            <div>
+                              <div className="flex items-center gap-2 mb-2">
+                                <span className="text-2xl">{activeCard.icon}</span>
+                                <div>
+                                  <h4 className="font-bold text-white text-base">{activeCard.title}</h4>
+                                  <span className="text-[10px] bg-amber-500/10 border border-amber-500/20 text-amber-500 px-1.5 py-0.5 rounded">
+                                    {activeCard.category}
+                                  </span>
+                                </div>
+                              </div>
+                              <p className="text-slate-300 text-sm leading-relaxed mb-3">{activeCard.desc}</p>
+                              <p className="text-xs text-slate-500 italic border-l-2 border-slate-700 pl-2">「{activeCard.flavor}」</p>
+                            </div>
+                          ) : (
+                            <div className="text-slate-500 text-sm italic text-center py-8">
+                              點擊下方手牌可在此詳細閱讀法律概念。
+                            </div>
+                          )}
+                        </div>
+
+                        {activeCard && !currentLevel.steps?.[levelStepIdx]?.isInteractiveChoice && (
+                          <button
+                            onClick={() => handlePlayCard(activeCard.id)}
+                            className="mt-4 w-full bg-amber-600 hover:bg-amber-500 text-slate-950 font-black py-2.5 rounded-lg text-sm flex items-center justify-center gap-1.5 transition-all shadow-md"
+                          >
+                            <GavelIcon size={14} /> 確認向法庭出牌！
+                          </button>
+                        )}
+                      </div>
+
+                      {/* 法庭日誌 */}
+                      <div className="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 shadow-xl h-64 flex flex-col">
+                        <div className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2 border-b border-slate-800 pb-2 flex justify-between items-center">
+                          <span>📝 法庭審理日誌</span>
+                          <span className="text-[10px] bg-slate-800 px-2 py-0.5 rounded text-slate-400">即時覆盤</span>
+                        </div>
+                        <div className="flex-1 overflow-y-auto space-y-2 text-xs">
+                          {gameLog.map((log, idx) => (
+                            <div key={idx} className={`p-2 rounded border transition-all ${
+                              log.type === 'system' ? 'bg-slate-950/60 border-slate-800 text-slate-400' :
+                              log.type === 'success' ? 'bg-emerald-950/20 border-emerald-900/30 text-emerald-400' :
+                              log.type === 'error' ? 'bg-rose-950/20 border-rose-900/30 text-rose-400' :
+                              'bg-amber-950/20 border-amber-900/30 text-amber-400'
+                            }`}>
+                              {log.text}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                    </div>
+                  </div>
+                )}
+
+                {/* 關卡總結畫面 */}
+                {gameState === 'level_summary' && (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-12">
+                    <div className="bg-emerald-500/10 p-6 rounded-full border border-emerald-500/20 mb-6 shadow-xl text-emerald-400">
+                      <CheckCircleIcon size={64} />
+                    </div>
+                    <h2 className="text-3xl font-extrabold text-white mb-2">🎉 順利攻破本關！</h2>
+                    <p className="text-amber-500 font-bold mb-6">實習團隊司法公信力：{credibility} / 100</p>
+                    
+                    <div className="bg-slate-900 border border-slate-800 rounded-xl p-6 mb-8 text-left text-sm space-y-3">
+                      <h4 className="font-bold text-white flex items-center gap-1.5 border-b border-slate-800 pb-2 text-base">
+                        <BookOpenIcon size={18} className="text-amber-500" /> 
+                        本關教育要點回顧：
+                      </h4>
+                      {currentLevel.id === 1 && (
+                        <p className="text-slate-300 leading-relaxed">
+                          <strong>刑罰最後手段性（謙抑性）：</strong> 國家發動刑罰（把人判刑、關進監獄）是對人身自由最嚴厲的侵害。因此，唯有在民事賠償、行政懲處都無法解決，且侵害極度嚴重時，才可動用刑法。同學間吃便當的行為應以民事侵權與校規處置為優先！
+                        </p>
+                      )}
+                      {currentLevel.id === 2 && (
+                        <p className="text-slate-300 leading-relaxed">
+                          <strong>犯罪成立的三階論與防衛限度：</strong> 一個行為要定罪，必須依序通過：(1)構成要件該當性（行為符合法條）、(2)違法性（無阻卻違法事由，如正當防衛）、(3)有責性（具備責任能力）。同時，正當防衛必須符合比例原則，手段若超越必要程度則屬於「防衛過當」。
+                        </p>
+                      )}
+                      {currentLevel.id === 3 && (
+                        <p className="text-slate-300 leading-relaxed">
+                          <strong>司法公正、獨立與證人保護：</strong> 程序正義與實體正義並重。保護證人人身安全（被害人保護）能促成事實真相呈現；法官堅持自由心證、不受媒體輿論輿情綁架（獨立審判），則是捍衛民主法治不受民粹左右的最後防線。
+                        </p>
+                      )}
+                      {currentLevel.id === 4 && (
+                        <p className="text-slate-300 leading-relaxed">
+                          <strong>少年事件處理法的精神：</strong> 少年（12歲以上未滿18歲）心智尚未完全成熟，其非行行為多與環境、家庭有關。國家應採取「保護優先、教育輔導代替純粹刑罰」的柔性手段，移送少年法庭輔導，幫助少年重返社會。
+                        </p>
+                      )}
+                    </div>
+
+                    <button 
+                      onClick={nextLevel}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-slate-950 font-black px-8 py-3.5 rounded-xl text-md flex items-center gap-2 shadow-lg transition-transform hover:scale-105"
+                    >
+                      前進下一關 <ArrowRightIcon size={18} />
+                    </button>
+                  </div>
+                )}
+
+                {/* 遊戲結束 (失敗) */}
+                {gameState === 'game_over' && (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-12">
+                    <div className="bg-rose-500/10 p-6 rounded-full border border-rose-500/20 mb-6 shadow-xl text-rose-500 animate-bounce">
+                      <XCircleIcon size={64} />
+                    </div>
+                    <h2 className="text-3xl font-extrabold text-white mb-2">❌ 實習審判終止</h2>
+                    <p className="text-rose-400 font-bold mb-4">司法公信力已歸零！</p>
+                    <p className="text-slate-400 mb-8 leading-relaxed max-w-md">
+                      由於多次在法庭程序上適用錯誤的法律觀念，或違反憲法比例原則，導致民眾與法官對實習團隊失去信任。請重新檢視手牌中的法學原理，再次挑戰！
+                    </p>
+                    <button 
+                      onClick={handleStartGame}
+                      className="bg-amber-600 hover:bg-amber-500 text-slate-950 font-black px-8 py-3.5 rounded-xl text-md flex items-center gap-2 shadow-lg transition-transform hover:scale-105"
+                    >
+                      <RotateCcwIcon size={18} /> 重新開始司法實習
+                    </button>
+                  </div>
+                )}
+
+                {/* 遊戲勝利 (通關) */}
+                {gameState === 'victory' && (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center max-w-2xl mx-auto py-12">
+                    <div className="bg-amber-500/10 p-6 rounded-full border border-amber-500/20 mb-6 shadow-xl text-amber-500">
+                      <AwardIcon size={64} className="animate-spin-slow" />
+                    </div>
+                    <h2 className="text-3.5xl font-black text-white mb-2">🏆 正義先鋒！完美結業</h2>
+                    <p className="text-emerald-400 font-bold mb-6">最終司法公信力評分：{credibility} / 100</p>
+                    <p className="text-slate-300 mb-8 leading-relaxed">
+                      你們成功帶領司法審判走完合法且正義的程序！
+                      在本次實習中，你們成功學會並實踐了：<strong>刑罰最後手段、罪刑法定、三階犯罪論、防衛過當、被害人訴訟安全、審判獨立自由心證，以及少事法保護優先精神</strong>。
+                      司法體系的運作不只為了處罰犯罪，更是為了在程序中維護人權、保障人民，這正是「正義的軌跡」！
+                    </p>
+                    <button 
+                      onClick={handleStartGame}
+                      className="bg-amber-600 hover:bg-amber-500 text-slate-950 font-black px-8 py-3.5 rounded-xl text-md flex items-center gap-2 shadow-lg transition-transform hover:scale-105"
+                    >
+                      <RotateCcwIcon size={18} /> 再次審理（重新挑戰）
+                    </button>
+                  </div>
+                )}
+
+              </main>
+
+              {/* 底部手牌區 (遊玩中顯示) */}
+              {gameState === 'playing' && (
+                <div className="bg-slate-900 border-t border-slate-800 p-4 shadow-[0_-8px_20px_rgba(0,0,0,0.4)] z-30">
+                  <div className="max-w-7xl mx-auto">
+                    <div className="flex justify-between items-center mb-2.5">
+                      <span className="text-xs font-bold text-slate-400 flex items-center gap-1.5">
+                        💼 司法實習卡牌庫（手牌）
+                        <span className="bg-slate-800 text-slate-500 px-2 py-0.5 rounded text-[10px] font-normal">
+                          點擊選中，即可在上方查閱法律詳情並出牌
+                        </span>
+                      </span>
+                    </div>
+                    
+                    {/* 卡牌滑動列 */}
+                    <div className="flex gap-4 overflow-x-auto pb-2 pt-1 scrollbar-thin scrollbar-thumb-slate-800 scrollbar-track-transparent">
+                      {LEGAL_CARDS.map((card) => {
+                        // 判斷第 4 關，普通起訴卡牌置灰，引導打出少事法
+                        const isLvl4Blocked = currentLevel.id === 4 && card.id !== 'juvenile_act' && card.id !== 'responsibility';
+                        const isLvl2SelectionStep = currentLevel.id === 2 && currentLevel.steps[levelStepIdx]?.isInteractiveChoice;
+                        const isSelected = activeCard?.id === card.id;
+
+                        return (
+                          <button
+                            key={card.id}
+                            disabled={isLvl4Blocked || isLvl2SelectionStep}
+                            onClick={() => handleSelectCard(card)}
+                            className={`
+                              relative w-44 h-36 flex-shrink-0 rounded-xl p-3 text-left flex flex-col justify-between transition-all duration-300 border
+                              ${isLvl4Blocked || isLvl2SelectionStep
+                                ? 'opacity-20 cursor-not-allowed grayscale border-slate-800 bg-slate-950/40' 
+                                : isSelected
+                                ? 'bg-gradient-to-br from-amber-950/40 to-slate-900 border-amber-500 shadow-lg -translate-y-2'
+                                : 'bg-slate-950 hover:bg-slate-900 border-slate-800 hover:border-slate-700 hover:-translate-y-1'
+                              }
+                            `}
+                          >
+                            <div>
+                              <div className="flex justify-between items-center mb-1">
+                                <span className="text-[10px] bg-slate-800 px-1.5 py-0.5 rounded text-slate-400 font-bold">
+                                  {card.category}
+                                </span>
+                                <span className="text-sm">{card.icon}</span>
+                              </div>
+                              <h4 className="font-bold text-white text-sm line-clamp-1">{card.title}</h4>
+                              <p className="text-[11px] text-slate-400 line-clamp-2 mt-1 leading-normal">{card.desc}</p>
+                            </div>
+                            
+                            <div className="text-[10px] text-amber-500 font-bold border-t border-slate-900/50 pt-1 text-center">
+                              點擊查閱細節
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* 回饋評語彈出窗 (Modal) */}
+              {feedbackModal.show && (
+                <div className="fixed inset-0 bg-black/80 flex items-center justify-center p-4 z-50 animate-fade-in">
+                  <div className="bg-slate-900 border border-slate-800 max-w-lg w-full rounded-2xl overflow-hidden shadow-2xl transform transition-all">
+                    {/* Header */}
+                    <div className={`p-4 flex items-center gap-3 border-b border-slate-800 ${
+                      feedbackModal.isSuccess ? 'bg-emerald-950/30 text-emerald-400' : 'bg-rose-950/30 text-rose-400'
+                    }`}>
+                      {feedbackModal.isSuccess ? <CheckCircleIcon size={24} /> : <AlertCircleIcon size={24} />}
+                      <h3 className="font-bold text-lg">{feedbackModal.title}</h3>
+                    </div>
+                    
+                    {/* Content */}
+                    <div className="p-6">
+                      <p className="text-slate-300 text-sm leading-relaxed whitespace-pre-wrap">
+                        {feedbackModal.content}
+                      </p>
+                    </div>
+                    
+                    {/* Footer */}
+                    <div className="p-4 bg-slate-950/50 border-t border-slate-800 flex justify-end">
+                      <button
+                        onClick={() => setFeedbackModal(prev => ({ ...prev, show: false }))}
+                        className={`px-6 py-2 rounded-lg font-bold text-sm ${
+                          feedbackModal.isSuccess 
+                            ? 'bg-emerald-600 hover:bg-emerald-500 text-slate-950' 
+                            : 'bg-slate-800 hover:bg-slate-700 text-slate-100'
+                        }`}
+                      >
+                        收到，繼續
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        }
+
+        // 渲染主 React 應用
+        const container = document.getElementById('root');
+        const root = ReactDOM.createRoot(container);
+        root.render(<App />);
+    </script>
+</body>
+</html>
